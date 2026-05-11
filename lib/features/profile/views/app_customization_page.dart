@@ -2917,7 +2917,7 @@ class _AppIconOptionCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        _selectionStateIcon(),
+                        _selectionStateIcon(context),
                         size: IconSize.small,
                         color: isSelected
                             ? theme.buttonPrimary
@@ -2946,14 +2946,15 @@ class _AppIconOptionCard extends StatelessWidget {
     );
   }
 
-  IconData _selectionStateIcon() {
+  IconData _selectionStateIcon(BuildContext context) {
+    final isIos = Theme.of(context).platform == TargetPlatform.iOS;
     if (isSelected) {
-      return Platform.isIOS
+      return isIos
           ? CupertinoIcons.check_mark_circled_solid
           : Icons.check_circle;
     }
 
-    return Platform.isIOS
+    return isIos
         ? CupertinoIcons.circle
         : Icons.radio_button_unchecked;
   }

@@ -159,7 +159,7 @@ class MainActivity : FlutterActivity() {
 
     private fun getCurrentAppIcon(): String? {
         for ((iconName, componentSuffix) in APP_ICON_ALIASES) {
-            val componentName = ComponentName(this, "$packageName$componentSuffix")
+            val componentName = ComponentName(this, "${this.packageName}$componentSuffix")
             val state = packageManager.getComponentEnabledSetting(componentName)
             if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
                 return iconName
@@ -196,7 +196,7 @@ class MainActivity : FlutterActivity() {
         )
 
         for ((knownIconName, componentSuffix) in APP_ICON_ALIASES) {
-            val componentName = ComponentName(this, "$packageName$componentSuffix")
+            val componentName = ComponentName(this, "${this.packageName}$componentSuffix")
             val state = if (knownIconName == iconName) {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             } else {
