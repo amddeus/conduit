@@ -174,11 +174,11 @@ class MainActivity : FlutterActivity() {
         }
 
         val packageManager = packageManager
-        val mainActivity = ComponentName(this, "$packageName.MainActivity")
+        val mainActivityComponent = ComponentName(this, "$packageName.MainActivity")
         val flags = PackageManager.DONT_KILL_APP
 
         packageManager.setComponentEnabledSetting(
-            mainActivity,
+            mainActivityComponent,
             if (iconName == null) {
                 PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
             } else {

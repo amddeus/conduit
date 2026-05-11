@@ -34,6 +34,7 @@ const _appIconOptions = <_AppIconOption>[
     initials: 'C',
     backgroundColor: Color(0xFF2563EB),
     accentColor: Color(0xFF8B5CF6),
+    foregroundColor: Colors.white,
   ),
   _AppIconOption(
     iconName: 'icon_orangethinker',
@@ -41,6 +42,7 @@ const _appIconOptions = <_AppIconOption>[
     initials: 'OT',
     backgroundColor: Color(0xFFF97316),
     accentColor: Color(0xFFFACC15),
+    foregroundColor: Colors.white,
   ),
   _AppIconOption(
     iconName: 'icon_newdark',
@@ -48,6 +50,7 @@ const _appIconOptions = <_AppIconOption>[
     initials: 'ND',
     backgroundColor: Color(0xFF111827),
     accentColor: Color(0xFF374151),
+    foregroundColor: Colors.white,
   ),
   _AppIconOption(
     iconName: 'icon_water',
@@ -55,6 +58,7 @@ const _appIconOptions = <_AppIconOption>[
     initials: 'WA',
     backgroundColor: Color(0xFF0EA5E9),
     accentColor: Color(0xFF22D3EE),
+    foregroundColor: Colors.white,
   ),
   _AppIconOption(
     iconName: 'icon_minimal',
@@ -62,6 +66,7 @@ const _appIconOptions = <_AppIconOption>[
     initials: 'MN',
     backgroundColor: Color(0xFFE5E7EB),
     accentColor: Color(0xFF9CA3AF),
+    foregroundColor: Colors.black87,
   ),
   _AppIconOption(
     iconName: 'icon_llm',
@@ -69,6 +74,7 @@ const _appIconOptions = <_AppIconOption>[
     initials: 'LLM',
     backgroundColor: Color(0xFF7C3AED),
     accentColor: Color(0xFFA855F7),
+    foregroundColor: Colors.white,
   ),
 ];
 
@@ -2806,6 +2812,7 @@ class _AppIconOption {
     required this.initials,
     required this.backgroundColor,
     required this.accentColor,
+    required this.foregroundColor,
     this.iconName,
   });
 
@@ -2814,6 +2821,7 @@ class _AppIconOption {
   final String initials;
   final Color backgroundColor;
   final Color accentColor;
+  final Color foregroundColor;
 }
 
 class _AppIconOptionCard extends StatelessWidget {
@@ -2835,9 +2843,6 @@ class _AppIconOptionCard extends StatelessWidget {
     final borderColor = isSelected
         ? theme.buttonPrimary
         : theme.dividerColor.withValues(alpha: 0.24);
-    final foregroundColor = option.label == 'Minimal'
-        ? Colors.black87
-        : Colors.white;
 
     return Semantics(
       button: true,
@@ -2885,7 +2890,7 @@ class _AppIconOptionCard extends StatelessWidget {
                         child: Text(
                           option.initials,
                           style: AppTypography.titleMediumStyle.copyWith(
-                            color: foregroundColor,
+                            color: option.foregroundColor,
                             fontWeight: FontWeight.w800,
                             letterSpacing: option.initials.length > 2
                                 ? -0.6
@@ -2909,13 +2914,7 @@ class _AppIconOptionCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        isSelected
-                            ? (Platform.isIOS
-                                  ? CupertinoIcons.check_mark_circled_solid
-                                  : Icons.check_circle)
-                            : (Platform.isIOS
-                                  ? CupertinoIcons.circle
-                                  : Icons.radio_button_unchecked),
+                        _selectionStateIcon(),
                         size: IconSize.small,
                         color: isSelected
                             ? theme.buttonPrimary
@@ -2942,6 +2941,18 @@ class _AppIconOptionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _selectionStateIcon() {
+    if (isSelected) {
+      return Platform.isIOS
+          ? CupertinoIcons.check_mark_circled_solid
+          : Icons.check_circle;
+    }
+
+    return Platform.isIOS
+        ? CupertinoIcons.circle
+        : Icons.radio_button_unchecked;
   }
 }
 

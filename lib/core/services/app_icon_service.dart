@@ -67,7 +67,10 @@ class AppIconService {
 
     try {
       final iconName = await _channel.invokeMethod<String>('getCurrentIcon');
-      return normalizeIconName(iconName);
+      if (iconName == null || !supportedAlternateAppIcons.contains(iconName)) {
+        return null;
+      }
+      return iconName;
     } on MissingPluginException {
       return null;
     }
