@@ -49,7 +49,7 @@ class AppIconService {
 
   static bool get isPlatformSupported => Platform.isAndroid || Platform.isIOS;
 
-  static String? normalizeIconName(String? iconName) {
+  static String? _normalizeIconName(String? iconName) {
     final normalized = iconName?.trim();
     if (normalized == null || normalized.isEmpty) {
       return null;
@@ -90,7 +90,7 @@ class AppIconService {
     if (!isPlatformSupported) {
       throw UnsupportedError('Alternate app icons are unavailable here.');
     }
-    final normalized = normalizeIconName(iconName);
+    final normalized = _normalizeIconName(iconName);
 
     await _channel.invokeMethod<void>('setAlternateIcon', {
       'iconName': normalized,

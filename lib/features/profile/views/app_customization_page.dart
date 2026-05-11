@@ -254,6 +254,11 @@ class AppCustomizationPage extends ConsumerWidget {
     final selectedIconName = appIconState.valueOrNull;
     final enabled = AppIconService.isPlatformSupported;
     final isLoading = appIconState.isLoading;
+    final scrollPhysics = Platform.isIOS
+        ? const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          )
+        : const ClampingScrollPhysics();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,9 +278,7 @@ class AppCustomizationPage extends ConsumerWidget {
           height: 152,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
+            physics: scrollPhysics,
             itemCount: _appIconOptions.length,
             separatorBuilder: (_, _) => const SizedBox(width: Spacing.sm),
             itemBuilder: (context, index) {

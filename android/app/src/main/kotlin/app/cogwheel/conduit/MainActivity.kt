@@ -176,7 +176,9 @@ class MainActivity : FlutterActivity() {
      */
     private fun setAlternateAppIcon(iconName: String?) {
         if (iconName != null && !APP_ICON_ALIASES.containsKey(iconName)) {
-            throw IllegalArgumentException("Unknown app icon: $iconName")
+            throw IllegalArgumentException(
+                "Unknown app icon: $iconName. Valid options: ${APP_ICON_ALIASES.keys.joinToString()}"
+            )
         }
 
         val mainActivityComponent = ComponentName(
