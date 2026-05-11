@@ -77,10 +77,10 @@ class AppIconService {
   }
 
   static Future<void> setAppIcon(String? iconName) async {
-    final normalized = normalizeIconName(iconName);
     if (!isPlatformSupported) {
       throw UnsupportedError('Alternate app icons are unavailable here.');
     }
+    final normalized = normalizeIconName(iconName);
 
     await _channel.invokeMethod<void>('setAlternateIcon', {
       'iconName': normalized,

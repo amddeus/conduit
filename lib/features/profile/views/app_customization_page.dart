@@ -27,6 +27,9 @@ import '../widgets/expandable_card.dart';
 import '../widgets/socket_health_card.dart';
 
 const _sectionGap = SizedBox(height: Spacing.lg);
+const _appIconCardWidth = 116.0;
+const _appIconTightLetterSpacing = -0.6;
+const _appIconNormalLetterSpacing = 0.4;
 
 const _appIconOptions = <_AppIconOption>[
   _AppIconOption(
@@ -2857,7 +2860,7 @@ class _AppIconOptionCard extends StatelessWidget {
             onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(AppBorderRadius.large),
             child: Container(
-              width: 116,
+              width: _appIconCardWidth,
               padding: const EdgeInsets.all(Spacing.md),
               decoration: BoxDecoration(
                 color: theme.cardBackground,
@@ -2893,8 +2896,8 @@ class _AppIconOptionCard extends StatelessWidget {
                             color: option.foregroundColor,
                             fontWeight: FontWeight.w800,
                             letterSpacing: option.initials.length > 2
-                                ? -0.6
-                                : 0.4,
+                                ? _appIconTightLetterSpacing
+                                : _appIconNormalLetterSpacing,
                           ),
                         ),
                       ),
