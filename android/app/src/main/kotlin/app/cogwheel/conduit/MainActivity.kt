@@ -1,14 +1,26 @@
 package app.cogwheel.conduit
 
-import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import android.os.Build
+import android.content.ComponentName
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.webkit.CookieManager
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : FlutterActivity() {
+    companion object {
+        private const val ASSISTANT_CHANNEL = "app.cogwheel.conduit/assistant"
+        private const val APP_ICON_CHANNEL = "app.cogwheel.conduit/app_icon"
+        private val APP_ICON_ALIASES = mapOf(
+            "icon_orangethinker" to ".icon_orangethinker",
+            "icon_newdark" to ".icon_newdark",
+            "icon_water" to ".icon_water",
+            "icon_minimal" to ".icon_minimal",
+            "icon_llm" to ".icon_llm",
+        )
+    }
+
     private lateinit var backgroundStreamingHandler: BackgroundStreamingHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +36,6 @@ class MainActivity : FlutterActivity() {
         windowInsetsController.isAppearanceLightNavigationBars = false
     }
     
-    private val CHANNEL = "app.cogwheel.conduit/assistant"
     private var methodChannel: io.flutter.plugin.common.MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -34,7 +45,34 @@ class MainActivity : FlutterActivity() {
         backgroundStreamingHandler = BackgroundStreamingHandler(this)
         backgroundStreamingHandler.setup(flutterEngine)
 
-        methodChannel = io.flutter.plugin.common.MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        methodChannel = io.flutter.plugin.common.MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            ASSISTANT_CHANNEL
+        )
+
+        val appIconChannel = io.flutter.plugin.common.MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            APP_ICON_CHANNEL
+        )
+
+        appIconChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getCurrentIcon" -> result.success(getCurrentAppIcon())
+                "supportsAlternateIcons" -> result.success(true)
+                "setAlternateIcon" -> {
+                    val iconName = call.argument<String>("iconName")
+                    try {
+                        setAlternateAppIcon(iconName)
+                        result.success(null)
+                    } catch (error: IllegalArgumentException) {
+                        result.error("INVALID_ICON", error.message, null)
+                    } catch (error: Exception) {
+                        result.error("APP_ICON_ERROR", error.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         
         // Setup cookie manager channel for WebView cookie access
         val cookieChannel = io.flutter.plugin.common.MethodChannel(
@@ -116,6 +154,59 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
         if (::backgroundStreamingHandler.isInitialized) {
             backgroundStreamingHandler.cleanup()
+        }
+    }
+
+    private fun getCurrentAppIcon(): String? {
+        for ((iconName, componentSuffix) in APP_ICON_ALIASES) {
+            val componentName = ComponentName(this, "${this.packageName}$componentSuffix")
+            val state = packageManager.getComponentEnabledSetting(componentName)
+            if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+                return iconName
+            }
+        }
+        return null
+    }
+
+    /**
+     * Dynamic launcher icons on Android are implemented by toggling launcher
+     * activity-alias components declared in AndroidManifest.xml. The default
+     * icon comes from MainActivity, so it must be disabled whenever an
+     * alternate alias is enabled to avoid duplicate launcher entries.
+     */
+    private fun setAlternateAppIcon(iconName: String?) {
+        if (iconName != null && !APP_ICON_ALIASES.containsKey(iconName)) {
+            throw IllegalArgumentException(
+                "Unknown app icon: $iconName. Valid options: ${APP_ICON_ALIASES.keys.joinToString()}"
+            )
+        }
+
+        val mainActivityComponent = ComponentName(
+            this,
+            MainActivity::class.java.name
+        )
+        val flags = PackageManager.DONT_KILL_APP
+
+        packageManager.setComponentEnabledSetting(
+            mainActivityComponent,
+            if (iconName == null) {
+                PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+            } else {
+                // Disable the default launcher component while an alias is
+                // active so Android only shows one launcher entry.
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            },
+            flags
+        )
+
+        for ((knownIconName, componentSuffix) in APP_ICON_ALIASES) {
+            val componentName = ComponentName(this, "${this.packageName}$componentSuffix")
+            val state = if (knownIconName == iconName) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+            }
+            packageManager.setComponentEnabledSetting(componentName, state, flags)
         }
     }
 }

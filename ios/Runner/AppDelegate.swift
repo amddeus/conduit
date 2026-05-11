@@ -815,6 +815,7 @@ struct AppShortcuts: AppShortcutsProvider {
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var backgroundStreamingHandler: BackgroundStreamingHandler?
+  private let appIconChannelName = "app.cogwheel.conduit/app_icon"
 
   /// Checks if a cookie matches a given URL based on domain.
   private func cookieMatchesUrl(cookie: HTTPCookie, url: URL) -> Bool {
@@ -847,6 +848,28 @@ struct AppShortcuts: AppShortcutsProvider {
     AppIntentMethodChannel.shared = AppIntentMethodChannel(
       messenger: appIntentRegistrar.messenger()
     )
+
+    let appIconRegistrar = engineBridge.applicationRegistrar
+    let appIconChannel = FlutterMethodChannel(
+      name: appIconChannelName,
+      binaryMessenger: appIconRegistrar.messenger()
+    )
+
+    appIconChannel.setMethodCallHandler { [weak self] call, result in
+      Task { @MainActor in
+        guard let self else {
+          result(
+            FlutterError(
+              code: "APP_ICON_ERROR",
+              message: "App icon bridge is unavailable.",
+              details: nil
+            )
+          )
+          return
+        }
+        self.handleAppIconMethodCall(call, result: result)
+      }
+    }
 
     let pasteRegistrar = engineBridge.applicationRegistrar
     NativePasteBridge.shared.configure(messenger: pasteRegistrar.messenger())
@@ -904,6 +927,68 @@ struct AppShortcuts: AppShortcutsProvider {
       } else {
         result(FlutterMethodNotImplemented)
       }
+    }
+  }
+
+  private func handleAppIconMethodCall(
+    _ call: FlutterMethodCall,
+    result: @escaping FlutterResult
+  ) {
+    switch call.method {
+    case "getCurrentIcon":
+      guard #available(iOS 10.3, *) else {
+        result(nil)
+        return
+      }
+      result(UIApplication.shared.alternateIconName)
+    case "supportsAlternateIcons":
+      guard #available(iOS 10.3, *) else {
+        result(false)
+        return
+      }
+      result(UIApplication.shared.supportsAlternateIcons)
+    case "setAlternateIcon":
+      guard #available(iOS 10.3, *) else {
+        result(
+          FlutterError(
+            code: "UNSUPPORTED",
+            message: "Alternate app icons require iOS 10.3 or newer.",
+            details: nil
+          )
+        )
+        return
+      }
+
+      guard UIApplication.shared.supportsAlternateIcons else {
+        result(
+          FlutterError(
+            code: "UNAVAILABLE",
+            message: "Alternate app icons are unavailable in this build.",
+            details: nil
+          )
+        )
+        return
+      }
+
+      let arguments = call.arguments as? [String: Any]
+      let iconName = arguments?["iconName"] as? String
+
+      UIApplication.shared.setAlternateIconName(iconName) { error in
+        if let error {
+          result(
+            FlutterError(
+              code: "APP_ICON_ERROR",
+              message: error.localizedDescription,
+              details: nil
+            )
+          )
+          return
+        }
+
+        result(nil)
+      }
+    default:
+      result(FlutterMethodNotImplemented)
     }
   }
 }
