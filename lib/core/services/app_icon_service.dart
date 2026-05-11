@@ -28,7 +28,11 @@ class AppIconController extends AsyncNotifier<String?> {
       if (!ref.mounted) {
         return;
       }
-      state = AsyncValue.data(await AppIconService.getCurrentIcon());
+      final currentIcon = await AppIconService.getCurrentIcon();
+      if (!ref.mounted) {
+        return;
+      }
+      state = AsyncValue.data(currentIcon);
     } catch (error, stackTrace) {
       state = previous;
       Error.throwWithStackTrace(error, stackTrace);

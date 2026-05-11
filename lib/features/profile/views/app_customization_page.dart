@@ -958,21 +958,25 @@ class AppCustomizationPage extends ConsumerWidget {
         option.iconName,
       );
     } on PlatformException catch (error) {
-      if (!context.mounted) return;
-      _showPromptSnackBar(
+      _showMountedSnackBar(
         context,
         error.message ?? 'Unable to change the app icon right now.',
       );
     } on MissingPluginException {
-      if (!context.mounted) return;
-      _showPromptSnackBar(
+      _showMountedSnackBar(
         context,
         'Dynamic app icons are not available in this build yet.',
       );
     } on UnsupportedError catch (error) {
-      if (!context.mounted) return;
-      _showPromptSnackBar(context, error.message ?? error.toString());
+      _showMountedSnackBar(context, error.message ?? error.toString());
     }
+  }
+
+  void _showMountedSnackBar(BuildContext context, String message) {
+    if (!context.mounted) {
+      return;
+    }
+    _showPromptSnackBar(context, message);
   }
 
   String? _extractSystemPrompt(Map<String, dynamic> settings) {

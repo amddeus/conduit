@@ -190,6 +190,8 @@ class MainActivity : FlutterActivity() {
             if (iconName == null) {
                 PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
             } else {
+                // Disable the default launcher component while an alias is
+                // active so Android only shows one launcher entry.
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             },
             flags
