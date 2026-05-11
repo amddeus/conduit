@@ -3,11 +3,13 @@ import 'dart:io' show Platform;
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/folder.dart';
 import '../../../core/models/model.dart';
+import '../../../core/services/app_icon_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../shared/theme/theme_extensions.dart';
 import '../../../shared/theme/tweakcn_themes.dart';
@@ -26,12 +28,57 @@ import '../widgets/socket_health_card.dart';
 
 const _sectionGap = SizedBox(height: Spacing.lg);
 
+const _appIconOptions = <_AppIconOption>[
+  _AppIconOption(
+    label: 'Default',
+    initials: 'C',
+    backgroundColor: Color(0xFF2563EB),
+    accentColor: Color(0xFF8B5CF6),
+  ),
+  _AppIconOption(
+    iconName: 'icon_orangethinker',
+    label: 'Orange Thinker',
+    initials: 'OT',
+    backgroundColor: Color(0xFFF97316),
+    accentColor: Color(0xFFFACC15),
+  ),
+  _AppIconOption(
+    iconName: 'icon_newdark',
+    label: 'New Dark',
+    initials: 'ND',
+    backgroundColor: Color(0xFF111827),
+    accentColor: Color(0xFF374151),
+  ),
+  _AppIconOption(
+    iconName: 'icon_water',
+    label: 'Water',
+    initials: 'WA',
+    backgroundColor: Color(0xFF0EA5E9),
+    accentColor: Color(0xFF22D3EE),
+  ),
+  _AppIconOption(
+    iconName: 'icon_minimal',
+    label: 'Minimal',
+    initials: 'MN',
+    backgroundColor: Color(0xFFE5E7EB),
+    accentColor: Color(0xFF9CA3AF),
+  ),
+  _AppIconOption(
+    iconName: 'icon_llm',
+    label: 'LLM',
+    initials: 'LLM',
+    backgroundColor: Color(0xFF7C3AED),
+    accentColor: Color(0xFFA855F7),
+  ),
+];
+
 class AppCustomizationPage extends ConsumerWidget {
   const AppCustomizationPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
+    final appIconState = ref.watch(appIconControllerProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final platformBrightness = MediaQuery.platformBrightnessOf(context);
     final l10n = AppLocalizations.of(context)!;
@@ -81,6 +128,8 @@ class AppCustomizationPage extends ConsumerWidget {
             activeTheme,
             settings,
           ),
+          _sectionGap,
+          _buildAppIconSection(context, ref, appIconState),
           _sectionGap,
           _buildLanguageSection(
             context,
@@ -182,6 +231,54 @@ class AppCustomizationPage extends ConsumerWidget {
                   .setLocale(parsed ?? Locale(selected));
             }
           },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAppIconSection(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<String?> appIconState,
+  ) {
+    final theme = context.conduitTheme;
+    final selectedIconName = appIconState.valueOrNull;
+    final enabled = AppIconService.isPlatformSupported;
+    final isLoading = appIconState.isLoading;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(title: 'App Icon'),
+        const SizedBox(height: Spacing.sm),
+        Text(
+          enabled
+              ? 'Pick the icon Conduit uses on your home screen.'
+              : 'Available on iOS and Android builds.',
+          style: AppTypography.bodySmallStyle.copyWith(
+            color: theme.sidebarForeground.withValues(alpha: 0.75),
+          ),
+        ),
+        const SizedBox(height: Spacing.md),
+        SizedBox(
+          height: 152,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            itemCount: _appIconOptions.length,
+            separatorBuilder: (_, _) => const SizedBox(width: Spacing.sm),
+            itemBuilder: (context, index) {
+              final option = _appIconOptions[index];
+              return _AppIconOptionCard(
+                option: option,
+                enabled: enabled && !isLoading,
+                isSelected: option.iconName == selectedIconName,
+                onTap: () => _handleAppIconSelection(context, ref, option),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -840,6 +937,33 @@ class AppCustomizationPage extends ConsumerWidget {
     ScaffoldMessenger.maybeOf(
       context,
     )?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _handleAppIconSelection(
+    BuildContext context,
+    WidgetRef ref,
+    _AppIconOption option,
+  ) async {
+    try {
+      await ref.read(appIconControllerProvider.notifier).selectIcon(
+        option.iconName,
+      );
+    } on PlatformException catch (error) {
+      if (!context.mounted) return;
+      _showPromptSnackBar(
+        context,
+        error.message ?? 'Unable to change the app icon right now.',
+      );
+    } on MissingPluginException {
+      if (!context.mounted) return;
+      _showPromptSnackBar(
+        context,
+        'Dynamic app icons are not available in this build yet.',
+      );
+    } on UnsupportedError catch (error) {
+      if (!context.mounted) return;
+      _showPromptSnackBar(context, error.message ?? error.toString());
+    }
   }
 
   String? _extractSystemPrompt(Map<String, dynamic> settings) {
@@ -2670,6 +2794,151 @@ class _PaletteColorDot extends StatelessWidget {
         border: Border.all(
           color: theme.dividerColor.withValues(alpha: 0.3),
           width: BorderWidth.thin,
+        ),
+      ),
+    );
+  }
+}
+
+class _AppIconOption {
+  const _AppIconOption({
+    required this.label,
+    required this.initials,
+    required this.backgroundColor,
+    required this.accentColor,
+    this.iconName,
+  });
+
+  final String? iconName;
+  final String label;
+  final String initials;
+  final Color backgroundColor;
+  final Color accentColor;
+}
+
+class _AppIconOptionCard extends StatelessWidget {
+  const _AppIconOptionCard({
+    required this.option,
+    required this.isSelected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final _AppIconOption option;
+  final bool isSelected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.conduitTheme;
+    final borderColor = isSelected
+        ? theme.buttonPrimary
+        : theme.dividerColor.withValues(alpha: 0.24);
+    final foregroundColor = option.label == 'Minimal'
+        ? Colors.black87
+        : Colors.white;
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      selected: isSelected,
+      label: 'App icon ${option.label}',
+      child: Opacity(
+        opacity: enabled ? 1 : 0.6,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(AppBorderRadius.large),
+            child: Container(
+              width: 116,
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: BoxDecoration(
+                color: theme.cardBackground,
+                borderRadius: BorderRadius.circular(AppBorderRadius.large),
+                border: Border.all(color: borderColor, width: 1.5),
+                boxShadow: isSelected ? ConduitShadows.card(context) : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            AppBorderRadius.large,
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              option.backgroundColor,
+                              option.accentColor,
+                            ],
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          option.initials,
+                          style: AppTypography.titleMediumStyle.copyWith(
+                            color: foregroundColor,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: option.initials.length > 2
+                                ? -0.6
+                                : 0.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.sm),
+                  Text(
+                    option.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelMediumStyle.copyWith(
+                      color: theme.sidebarForeground,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.xs),
+                  Row(
+                    children: [
+                      Icon(
+                        isSelected
+                            ? (Platform.isIOS
+                                  ? CupertinoIcons.check_mark_circled_solid
+                                  : Icons.check_circle)
+                            : (Platform.isIOS
+                                  ? CupertinoIcons.circle
+                                  : Icons.radio_button_unchecked),
+                        size: IconSize.small,
+                        color: isSelected
+                            ? theme.buttonPrimary
+                            : theme.iconSecondary,
+                      ),
+                      const SizedBox(width: Spacing.xs),
+                      Expanded(
+                        child: Text(
+                          isSelected ? 'Selected' : 'Select',
+                          style: AppTypography.labelSmallStyle.copyWith(
+                            color: isSelected
+                                ? theme.buttonPrimary
+                                : theme.iconSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
