@@ -173,7 +173,10 @@ class MainActivity : FlutterActivity() {
             throw IllegalArgumentException("Unknown app icon: $iconName")
         }
 
-        val mainActivityComponent = ComponentName(this, "$packageName.MainActivity")
+        val mainActivityComponent = ComponentName(
+            this,
+            MainActivity::class.java.name
+        )
         val flags = PackageManager.DONT_KILL_APP
 
         packageManager.setComponentEnabledSetting(

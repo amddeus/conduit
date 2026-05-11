@@ -19,13 +19,11 @@ class AppIconController extends AsyncNotifier<String?> {
   Future<String?> build() => AppIconService.getCurrentIcon();
 
   Future<void> selectIcon(String? iconName) async {
-    final normalized = AppIconService.normalizeIconName(iconName);
     final previous = state;
-
-    state = AsyncValue.data(normalized);
+    state = const AsyncLoading();
 
     try {
-      await AppIconService.setAppIcon(normalized);
+      await AppIconService.setAppIcon(iconName);
       state = AsyncValue.data(await AppIconService.getCurrentIcon());
     } catch (error, stackTrace) {
       state = previous;

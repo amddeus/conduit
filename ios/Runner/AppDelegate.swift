@@ -856,7 +856,7 @@ struct AppShortcuts: AppShortcutsProvider {
     )
 
     appIconChannel.setMethodCallHandler { [weak self] call, result in
-      Task { @MainActor [weak self] in
+      Task { @MainActor in
         guard let self else {
           result(
             FlutterError(
