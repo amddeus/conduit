@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 
 import 'package:flutter/services.dart';
@@ -70,6 +71,10 @@ class AppIconService {
       }
       return iconName;
     } on MissingPluginException {
+      developer.log(
+        'App icon channel is unavailable while reading the current icon.',
+        name: 'AppIconService',
+      );
       return null;
     }
   }

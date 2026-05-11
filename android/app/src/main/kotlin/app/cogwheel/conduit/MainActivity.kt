@@ -168,6 +168,12 @@ class MainActivity : FlutterActivity() {
         return null
     }
 
+    /**
+     * Dynamic launcher icons on Android are implemented by toggling launcher
+     * activity-alias components. The default icon comes from MainActivity, so
+     * it must be disabled whenever an alternate alias is enabled to avoid
+     * duplicate launcher entries.
+     */
     private fun setAlternateAppIcon(iconName: String?) {
         if (iconName != null && !APP_ICON_ALIASES.containsKey(iconName)) {
             throw IllegalArgumentException("Unknown app icon: $iconName")
