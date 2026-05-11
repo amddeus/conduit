@@ -2895,7 +2895,7 @@ class _AppIconOptionCard extends StatelessWidget {
                           style: AppTypography.titleMediumStyle.copyWith(
                             color: option.foregroundColor,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: option.initials.length > 2
+                            letterSpacing: option.initials.length >= 3
                                 ? _appIconTightLetterSpacing
                                 : _appIconNormalLetterSpacing,
                           ),
